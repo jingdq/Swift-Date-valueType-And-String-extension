@@ -1,7 +1,7 @@
 //
 //  Date.swift
 //
-//  Created by 慧趣小歪 on 14/9/26.
+//  Created by bujiandi(慧趣小歪) on 14/9/26.
 //
 //  值类型的 Date 使用方便 而且避免使用 @NSCopying 的麻烦
 //  基本遵循了官方所有关于值类型的实用协议 放心使用
@@ -48,6 +48,50 @@ extension Date {
     }
 }
 
+// MARK: - 计算
+extension Date {
+    mutating func addDay(day:Int) {
+        timeInterval += Double(day) * 24 * 3600
+    }
+    mutating func addHour(hour:Int) {
+        timeInterval += Double(hour) * 3600
+    }
+    mutating func addMinute(minute:Int) {
+        timeInterval += Double(minute) * 60
+    }
+    mutating func addSecond(second:Int) {
+        timeInterval += Double(second)
+    }
+    mutating func addMonth(month m:Int) {
+        let (year, month, day) = getDay()
+        let (hour, minute, second) = getTime()
+        let era = year / 100
+        if let date = NSCalendar.currentCalendar().dateWithEra(era, year: year, month: month + m, day: day, hour: hour, minute: minute, second: second, nanosecond: 0) {
+            timeInterval = date.timeIntervalSince1970
+        } else {
+            timeInterval += Double(m) * 30 * 24 * 3600
+        }
+    }
+    mutating func addYear(year y:Int) {
+        let (year, month, day) = getDay()
+        let (hour, minute, second) = getTime()
+        let era = year / 100
+        if let date = NSCalendar.currentCalendar().dateWithEra(era, year: year + y, month: month, day: day, hour: hour, minute: minute, second: second, nanosecond: 0) {
+            timeInterval = date.timeIntervalSince1970
+        } else {
+            timeInterval += Double(y) * 365 * 24 * 3600
+        }
+    }
+}
+
+// MARK: - 判断
+extension Date {
+    func between(begin:Date,_ over:Date) -> Bool {
+        return (self >= begin && self <= over) || (self >= over && self <= begin)
+    }
+}
+
+// MARK: - 获取 日期 或 时间
 extension Date {
     
     // for example : let (year, month, day) = date.getDay()
