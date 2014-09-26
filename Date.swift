@@ -3,7 +3,7 @@
 //
 //  Created by 慧趣小歪 on 14/9/26.
 //
-//  值类型的 Date 使用方便 而且避免使用 @NSCopying 的麻烦 
+//  值类型的 Date 使用方便 而且避免使用 @NSCopying 的麻烦
 //  基本遵循了官方所有关于值类型的实用协议 放心使用
 //
 
@@ -41,7 +41,7 @@ struct Date {
 
 // MARK: - 输出
 extension Date {
-    func stringWithFormat(format:String = "yyyy-MM-dd HH:mm:ss") -> String {
+    func stringWithFormat(_ format:String = "yyyy-MM-dd HH:mm:ss") -> String {
         var formatter = NSDateFormatter()
         formatter.dateFormat = format
         return formatter.stringFromDate(NSDate(timeIntervalSince1970: timeInterval))
@@ -69,7 +69,7 @@ extension Date {
 
 // MARK: - 构造函数
 extension Date {
-    init(year:Int, month:Int = 0, day:Int = 1, hour:Int = 1, minute:Int = 0, second:Int = 0) {
+    init(year:Int, month:Int = 1, day:Int = 1, hour:Int = 0, minute:Int = 0, second:Int = 0) {
         let era = year / 100
         if let date = NSCalendar.currentCalendar().dateWithEra(era, year: year, month: month, day: day, hour: hour, minute: minute, second: second, nanosecond: 0) {
             timeInterval = date.timeIntervalSince1970
@@ -79,7 +79,7 @@ extension Date {
 
 extension Date {
     init(_ v: NSTimeInterval) { timeInterval = v }
-
+    
     init(_ v: NSTimeInterval, sinceDate:Date) {
         let date = NSDate(timeIntervalSince1970: sinceDate.timeInterval)
         timeInterval = NSDate(timeInterval: v, sinceDate: date).timeIntervalSince1970
@@ -175,5 +175,5 @@ extension Date : Equatable {
 
 // MARK: - 可以用 > < >= <= 对比
 extension Date : Comparable {
-
+    
 }
