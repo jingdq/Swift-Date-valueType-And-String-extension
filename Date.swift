@@ -24,6 +24,18 @@ func >(lhs: Date, rhs: Date) -> Bool {
 func <(lhs: Date, rhs: Date) -> Bool {
     return lhs.timeInterval < rhs.timeInterval
 }
+func +(lhs: Date, rhs: NSTimeInterval) -> Date {
+    return Date(rhs, sinceDate:lhs)
+}
+func -(lhs: Date, rhs: NSTimeInterval) -> Date {
+    return Date(-rhs, sinceDate:lhs)
+}
+func +(lhs: NSTimeInterval, rhs: Date) -> Date {
+    return Date(lhs, sinceDate:rhs)
+}
+func -(lhs: NSTimeInterval, rhs: Date) -> Date {
+    return Date(-lhs, sinceDate:rhs)
+}
 
 func +=(inout lhs: Date, rhs: NSTimeInterval) {
     return lhs = Date(rhs, sinceDate:lhs)
@@ -37,6 +49,18 @@ struct Date {
     var timeInterval:NSTimeInterval = 0
     
     init() { self.timeInterval = NSDate().timeIntervalSince1970 }
+}
+
+extension Date {
+    var timeIntervalSinceReferenceDate: NSTimeInterval {
+        return NSDate(timeIntervalSince1970: timeInterval).timeIntervalSinceReferenceDate
+    }
+    var timeIntervalSinceNow: NSTimeInterval {
+        return NSDate(timeIntervalSince1970: timeInterval).timeIntervalSinceNow
+    }
+    var timeIntervalSince1970: NSTimeInterval { return timeInterval }
+
+
 }
 
 // MARK: - 输出
@@ -85,17 +109,41 @@ extension Date {
 }
 
 // MARK: - 判断
-extension Date {
+extension Date : BidirectionalIndexType {
     func between(begin:Date,_ over:Date) -> Bool {
         return (self >= begin && self <= over) || (self >= over && self <= begin)
     }
+    func between(range:Range<Date>) -> Bool {
+        return self >= range.startIndex && self <= range.endIndex
+    }
+    
+    func successor() -> Date { return self + 1 }
+    func predecessor() -> Date { return self - 1 }
+}
+
+extension Date {
+    var isBissextileYear:Bool {
+        let (year, _, _) = getDay()
+        return year % 4 == 0
+    }
+    var isFebruary:Bool {
+        let (_, month, _) = getDay()
+        return month == 2
+    }
+    //let date : NSDate
+}
+
+extension Date {
+    func earlierDate(anotherDate: Date) -> Date { return min(self, anotherDate) }
+    func laterDate(anotherDate: Date) -> Date { return max(self, anotherDate) }
+
 }
 
 // MARK: - 获取 日期 或 时间
 extension Date {
     
     // for example : let (year, month, day) = date.getDay()
-    func getDay() -> (Int, Int, Int) {
+    func getDay() -> (year:Int, month:Int, day:Int) {
         var year:Int = 0, month:Int = 0, day:Int = 0
         let date = NSDate(timeIntervalSince1970: timeInterval)
         NSCalendar.currentCalendar().getEra(nil, year: &year, month: &month, day: &day, fromDate: date)
@@ -103,7 +151,7 @@ extension Date {
     }
     
     // for example : let (hour, minute, second) = date.getTime()
-    func getTime() -> (Int, Int, Int) {
+    func getTime() -> (hour:Int, minute:Int, second:Int) {
         var hour:Int = 0, minute:Int = 0, second:Int = 0
         let date = NSDate(timeIntervalSince1970: timeInterval)
         NSCalendar.currentCalendar().getHour(&hour, minute: &minute, second: &second, nanosecond: nil, fromDate: date)
@@ -139,11 +187,18 @@ extension Date {
 }
 
 extension Date {
-    init(_ v: String, style: NSDateFormatterStyle = .NoStyle) {
+    init(_ v: String, style: NSDateFormatterStyle) {
         var formatter = NSDateFormatter()
         formatter.dateStyle = style
         if let date = formatter.dateFromString(v) {
             self.timeInterval = date.timeIntervalSince1970
+        } else {
+            formatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
+            if let date = formatter.dateFromString(v) {
+                self.timeInterval = date.timeIntervalSince1970
+            } else {
+                assert(DEBUG == 0, "日期字符串格式异常[\(v)] at line:\(__LINE__) at column:\(__COLUMN__)")//__FILE__,__FUNCTION__
+            }
         }
     }
     
@@ -152,6 +207,8 @@ extension Date {
         formatter.dateFormat = dateFormat
         if let date = formatter.dateFromString(v) {
             self.timeInterval = date.timeIntervalSince1970
+        } else {
+            assert(DEBUG == 0, "日期字符串格式异常[\(v)] at line:\(__LINE__) at column:\(__COLUMN__)") //__FILE__,__FUNCTION__
         }
     }
 }
@@ -188,7 +245,7 @@ extension Date : DebugPrintable {
 
 // MARK: - 可以直接赋值整数
 extension Date : IntegerLiteralConvertible {
-    static func convertFromIntegerLiteral(value: Int64) -> Date {
+    static func convertFromIntegerLiteral(value: IntegerLiteralType) -> Date {
         return Date(Double(value))
     }
 }
@@ -197,6 +254,60 @@ extension Date : IntegerLiteralConvertible {
 extension Date : FloatLiteralConvertible {
     static func convertFromFloatLiteral(value: Double) -> Date {
         return Date(value)
+    }
+}
+
+extension Date :StringLiteralConvertible {
+    static func convertFromStringLiteral(value: String) -> Date {
+        return Date(value)
+    }
+    static func convertFromExtendedGraphemeClusterLiteral(value: String) -> Date {
+        return Date(value)
+    }
+
+}
+
+/*
+// __conversion() 功能不再允许
+extension Date {
+    func __conversion() -> NSDate { return NSDate(timeIntervalSince1970: timeInterval) }
+    func __conversion() -> Double { return timeInterval }
+    func __conversion() -> Int64 { return Int64(timeInterval) }
+}
+*/
+
+// MARK: - 转日期
+extension Date {
+    var object: NSDate { return NSDate(timeIntervalSince1970: timeInterval) }
+    init(_ v:NSDate) { self.timeInterval = v.timeIntervalSince1970 }
+}
+extension NSDate {
+    var value:Date { return Date(timeIntervalSince1970) }
+    convenience init(_ v:Date) { self.init(timeIntervalSince1970: v.timeIntervalSince1970) }
+}
+
+// MARK: - 可以直接赋值日期
+protocol DateLiteralConvertible {
+    typealias DateLiteralType
+    class func convertFromDateLiteral(value: DateLiteralType) -> Self
+}
+typealias DateLiteralType = Date
+
+extension Date : DateLiteralConvertible {
+    //typealias DateLiteralType = NSDate
+
+    static func convertFromDateLiteral(value: NSDate) -> Date {
+        return Date(value.timeIntervalSince1970)
+    }
+}
+extension NSDate : FloatLiteralConvertible {
+    public class func convertFromFloatLiteral(value: FloatLiteralType) -> Self {
+        return self(timeIntervalSince1970: value)
+    }
+}
+extension NSDate : DateLiteralConvertible {
+    class func convertFromDateLiteral(value: Date) -> Self {
+        return self(timeIntervalSince1970: value.timeInterval)
     }
 }
 
